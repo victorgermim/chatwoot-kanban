@@ -166,6 +166,14 @@ const menuItems = computed(() => {
           })),
         },
         {
+          name: 'Kanban',
+          label: t('KANBAN'),
+          icon: 'i-lucide-columns-3',
+          to: accountScopedRoute('kanban_index'),
+          activeOn: ['kanban_index'],
+          show: import.meta.env.VITE_ENABLE_KANBAN === 'true',
+        },
+        {
           name: 'Teams',
           label: t('SIDEBAR.TEAMS'),
           icon: 'i-lucide-users',
