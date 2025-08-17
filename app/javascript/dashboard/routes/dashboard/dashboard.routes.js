@@ -12,6 +12,8 @@ import AppContainer from './Dashboard.vue';
 import Suspended from './suspended/Index.vue';
 import kanbanRoutes from './kanban';
 
+console.log('[KANBAN] módulo de rotas carregado:', kanbanRoutes?.map(r => r.name));
+
 export default {
   routes: [
     {

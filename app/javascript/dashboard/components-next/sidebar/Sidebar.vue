@@ -118,6 +118,7 @@ const newReportRoutes = () => [
 ];
 
 const reportRoutes = computed(() => newReportRoutes());
+console.log('[KANBAN] destino no menu:', accountScopedRoute('kanban_index'));
 
 const menuItems = computed(() => {
   return [

@@ -21,6 +21,14 @@ import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import KanbanColumn from './KanbanColumn.vue';
 
+onMounted(() => {
+  console.log('[KANBAN] KanbanBoard MOUNTED', { accountId: route.params.accountId });
+});
+
+watch(() => route.fullPath, (p) => {
+  console.log('[KANBAN] navegou para', p);
+});
+
 type Card = {
   id: string;
   name: string;
