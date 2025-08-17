@@ -166,14 +166,6 @@ const menuItems = computed(() => {
           })),
         },
         {
-          name: 'Kanban',
-          label: t('KANBAN'),
-          icon: 'i-lucide-columns-3',
-          to: accountScopedRoute('kanban_index'),
-          activeOn: ['kanban_index'],
-          show: import.meta.env.VITE_ENABLE_KANBAN === 'true',
-        },
-        {
           name: 'Teams',
           label: t('SIDEBAR.TEAMS'),
           icon: 'i-lucide-users',
@@ -221,26 +213,12 @@ const menuItems = computed(() => {
       ],
     },
     {
-      name: 'Captain',
-      icon: 'i-woot-captain',
-      label: t('SIDEBAR.CAPTAIN'),
-      children: [
-        {
-          name: 'Assistants',
-          label: t('SIDEBAR.CAPTAIN_ASSISTANTS'),
-          to: accountScopedRoute('captain_assistants_index'),
-        },
-        {
-          name: 'Documents',
-          label: t('SIDEBAR.CAPTAIN_DOCUMENTS'),
-          to: accountScopedRoute('captain_documents_index'),
-        },
-        {
-          name: 'Responses',
-          label: t('SIDEBAR.CAPTAIN_RESPONSES'),
-          to: accountScopedRoute('captain_responses_index'),
-        },
-      ],
+      name: 'Kanban',
+      label: t('Kanban'),
+      icon: 'i-lucide-columns-3',
+      to: accountScopedRoute('kanban_index'),
+      activeOn: ['kanban_index'],
+      show: import.meta.env.VITE_ENABLE_KANBAN === 'true',
     },
     {
       name: 'Contacts',
