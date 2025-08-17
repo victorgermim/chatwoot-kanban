@@ -1,91 +1,65 @@
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { API } from 'dashboard/services/apiClient'
+
+const route = useRoute()
+const accountId = route.params.accountId
+
+const lists = ref({ pending: [], open: [], resolved: [] })
+const loading = ref(false)
+const errorMsg = ref('')
+
+async function load(status) {
+  try {
+    const { data } = await API.get(
+      `/api/v1/accounts/${accountId}/conversations`,
+      { params: { status, page: 1 } }
+    )
+    return Array.isArray(data?.data?.payload) ? data.data.payload
+         : Array.isArray(data?.payload)       ? data.payload
+         : []
+  } catch (e) {
+    const code = e?.response?.status ?? ''
+    console.error(`[KANBAN] load ${status} error`, code, e)
+    errorMsg.value = `Erro ao carregar ${status}: ${code}`
+    return []
+  }
+}
+
+onMounted(async () => {
+  console.log('[KANBAN] KanbanBoard MOUNTED', { accountId })
+  loading.value = true
+  lists.value.pending  = await load('pending')
+  lists.value.open     = await load('open')
+  lists.value.resolved = await load('resolved')
+  loading.value = false
+})
+</script>
+
 <template>
   <section class="p-6">
-    <header class="flex items-center gap-3 mb-5">
+    <header class="flex items-center gap-3 mb-4">
       <span class="i-lucide-columns-3 size-5" />
       <h1 class="text-2xl font-semibold">Kanban</h1>
     </header>
 
-    <div v-if="error" class="text-red-600 text-sm mb-3">{{ error }}</div>
-    <div v-else-if="loading" class="text-sm text-n-slate-11">Carregando conversas…</div>
+    <p v-if="errorMsg" class="text-red-500">{{ errorMsg }}</p>
+    <p v-else-if="loading" class="text-n-slate-11">Carregando…</p>
 
-    <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <KanbanColumn title="Abertas" :items="lists.open" />
-      <KanbanColumn title="Em atendimento" :items="lists.pending" />
-      <KanbanColumn title="Resolvidas" :items="lists.resolved" />
+    <div v-else class="grid grid-cols-3 gap-4">
+      <div>
+        <h3 class="font-medium mb-2">Pendente ({{ lists.pending.length }})</h3>
+        <ul><li v-for="c in lists.pending" :key="c.id">{{ c.meta?.sender?.name || c.id }}</li></ul>
+      </div>
+      <div>
+        <h3 class="font-medium mb-2">Em aberto ({{ lists.open.length }})</h3>
+        <ul><li v-for="c in lists.open" :key="c.id">{{ c.meta?.sender?.name || c.id }}</li></ul>
+      </div>
+      <div>
+        <h3 class="font-medium mb-2">Resolvido ({{ lists.resolved.length }})</h3>
+        <ul><li v-for="c in lists.resolved" :key="c.id">{{ c.meta?.sender?.name || c.id }}</li></ul>
+      </div>
     </div>
   </section>
 </template>
-
-<script setup lang="ts">
-import { ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import KanbanColumn from './KanbanColumn.vue';
-import { onMounted } from 'vue';
-
-onMounted(() => {
-  console.log('[KANBAN] KanbanBoard MOUNTED', { accountId: route.params.accountId });
-});
-
-watch(() => route.fullPath, (p) => {
-  console.log('[KANBAN] navegou para', p);
-});
-
-type Card = {
-  id: string;
-  name: string;
-  email?: string;
-  avatarUrl?: string;
-  status: string;
-  lastMessage?: string;
-};
-
-const route = useRoute();
-const loading = ref(false);
-const error = ref<string | null>(null);
-const lists = ref<{ open: Card[]; pending: Card[]; resolved: Card[] }>({
-  open: [], pending: [], resolved: [],
-});
-
-function mapConversation(conv: any): Card {
-  return {
-    id: String(conv?.id),
-    name: conv?.meta?.sender?.name ?? 'Sem nome',
-    email: conv?.meta?.sender?.email ?? '',
-    avatarUrl: conv?.meta?.sender?.thumbnail ?? '',
-    status: conv?.status ?? 'open',
-    lastMessage: conv?.last_non_activity_message?.content ?? '',
-  };
-}
-
-async function fetchConversations(status: 'open' | 'pending' | 'resolved') {
-  const accountId = route.params.accountId as string;
-  const res = await fetch(
-    `/api/v1/accounts/${accountId}/conversations?status=${status}&page=1`,
-    { credentials: 'same-origin', headers: { Accept: 'application/json' } }
-  );
-  if (!res.ok) throw new Error(`Erro ao carregar ${status}: ${res.status}`);
-  const json = await res.json();
-  const arr = Array.isArray(json?.data?.payload) ? json.data.payload
-           : Array.isArray(json?.data) ? json.data : [];
-  return arr.map(mapConversation);
-}
-
-async function load() {
-  loading.value = true;
-  error.value = null;
-  try {
-    const [open, pending, resolved] = await Promise.all([
-      fetchConversations('open'),
-      fetchConversations('pending').catch(() => []),
-      fetchConversations('resolved'),
-    ]);
-    lists.value = { open, pending, resolved };
-  } catch (e: any) {
-    error.value = e?.message ?? String(e);
-  } finally {
-    loading.value = false;
-  }
-}
-
-watch(() => route.params.accountId, () => load(), { immediate: true });
-</script>
