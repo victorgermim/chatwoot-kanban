@@ -20,6 +20,7 @@ export default {
       path: frontendURL('accounts/:accountId'),
       component: AppContainer,
       children: [
+        ...kanbanRoutes,
         ...captainRoutes,
         ...inboxRoutes,
         ...conversation.routes,
@@ -29,7 +30,6 @@ export default {
         ...notificationRoutes,
         ...helpcenterRoutes.routes,
         ...campaignsRoutes.routes,
-        ...kanbanRoutes,
       ],
     },
     {
