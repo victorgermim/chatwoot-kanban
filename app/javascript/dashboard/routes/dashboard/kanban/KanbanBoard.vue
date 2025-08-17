@@ -1,10 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { API } from 'dashboard/services/apiClient'
+import ApiClient from 'dashboard/api/ApiClient'
 
 const route = useRoute()
 const accountId = route.params.accountId
+
+const conversationsAPI = new ApiClient('conversations', { accountScoped: true })
 
 const lists = ref({ pending: [], open: [], resolved: [] })
 const loading = ref(false)
@@ -12,10 +14,9 @@ const errorMsg = ref('')
 
 async function load(status) {
   try {
-    const { data } = await API.get(
-      `/api/v1/accounts/${accountId}/conversations`,
-      { params: { status, page: 1 } }
-    )
+    const { data } = await conversationsAPI.get({
+      params: { status, page: 1 }
+    })
     return Array.isArray(data?.data?.payload) ? data.data.payload
          : Array.isArray(data?.payload)       ? data.payload
          : []
@@ -50,15 +51,27 @@ onMounted(async () => {
     <div v-else class="grid grid-cols-3 gap-4">
       <div>
         <h3 class="font-medium mb-2">Pendente ({{ lists.pending.length }})</h3>
-        <ul><li v-for="c in lists.pending" :key="c.id">{{ c.meta?.sender?.name || c.id }}</li></ul>
+        <ul>
+          <li v-for="c in lists.pending" :key="c.id">
+            {{ c.meta?.sender?.name || c.id }}
+          </li>
+        </ul>
       </div>
       <div>
         <h3 class="font-medium mb-2">Em aberto ({{ lists.open.length }})</h3>
-        <ul><li v-for="c in lists.open" :key="c.id">{{ c.meta?.sender?.name || c.id }}</li></ul>
+        <ul>
+          <li v-for="c in lists.open" :key="c.id">
+            {{ c.meta?.sender?.name || c.id }}
+          </li>
+        </ul>
       </div>
       <div>
         <h3 class="font-medium mb-2">Resolvido ({{ lists.resolved.length }})</h3>
-        <ul><li v-for="c in lists.resolved" :key="c.id">{{ c.meta?.sender?.name || c.id }}</li></ul>
+        <ul>
+          <li v-for="c in lists.resolved" :key="c.id">
+            {{ c.meta?.sender?.name || c.id }}
+          </li>
+        </ul>
       </div>
     </div>
   </section>
