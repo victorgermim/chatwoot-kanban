@@ -39,8 +39,8 @@ class ApiClient {
     return url;
   }
 
-  get() {
-    return axios.get(this.url);
+  get(config = {}) {
+    return axios.get(this.url, config);
   }
 
   show(id) {
@@ -51,7 +51,7 @@ class ApiClient {
     return axios.post(this.url, data);
   }
 
-  update(id, data) {
+   update(id, data, config = {}) {
     return axios.patch(`${this.url}/${id}`, data, config);
   }
 
