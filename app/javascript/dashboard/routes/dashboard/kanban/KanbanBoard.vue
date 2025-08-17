@@ -1,3 +1,36 @@
+<template>
+  <section class="p-6">
+    <header class="flex items-center gap-3 mb-4">
+      <span class="i-lucide-columns-3 size-5" />
+      <h1 class="text-2xl font-semibold">Kanban</h1>
+    </header>
+
+    <p v-if="errorMsg" class="text-red-500">{{ errorMsg }}</p>
+    <p v-else-if="loading" class="text-n-slate-11">Carregando…</p>
+
+    <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <KanbanColumn
+        title="Pendente"
+        status="pending"
+        :items="columns.pending"
+        @moved="onMoved"
+      />
+      <KanbanColumn
+        title="Em aberto"
+        status="open"
+        :items="columns.open"
+        @moved="onMoved"
+      />
+      <KanbanColumn
+        title="Resolvido"
+        status="resolved"
+        :items="columns.resolved"
+        @moved="onMoved"
+      />
+    </div>
+  </section>
+</template>
+
 <script setup>
 import { reactive, ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
@@ -59,12 +92,11 @@ onMounted(async () => {
 });
 
 /**
- * Chamado pela coluna quando um item cai nela.
- * id: conversa movida
- * toStatus: 'pending' | 'open' | 'resolved'
+ * Disparado pela coluna quando um item cai nela.
+ * { id, toStatus }
  */
 async function onMoved({ id, toStatus }) {
-  // 1) Update otimista local
+  // Otimista: move localmente
   const removeFromAll = () => {
     columns.pending = columns.pending.filter(i => i.id !== id);
     columns.open = columns.open.filter(i => i.id !== id);
@@ -81,12 +113,10 @@ async function onMoved({ id, toStatus }) {
   addTo(toStatus);
 
   try {
-    // 2) Persistir no servidor (IMPORTANTE)
     const { status: http } = await conversationsAPI.update(id, { status: toStatus });
     console.log('[KANBAN] update status', { id, toStatus, http });
 
-    // 3) Sincronizar com o que o servidor devolve
-    //    (refetch só da coluna de destino para ficar rápido)
+    // Recarrega só a coluna de destino para alinhar com o servidor
     if (toStatus === 'pending') columns.pending = await fetchList('pending');
     if (toStatus === 'open') columns.open = await fetchList('open');
     if (toStatus === 'resolved') columns.resolved = await fetchList('resolved');
@@ -94,8 +124,7 @@ async function onMoved({ id, toStatus }) {
     const code = e?.response?.status ?? '';
     console.error('[KANBAN] erro ao atualizar status', code, e);
     errorMsg.value = `Erro ao mover cartão: ${code}`;
-    // Recarrega tudo para reverter/alinhar
-    await refreshAll();
+    await refreshAll(); // volta ao estado consistente
   }
 }
 </script>
