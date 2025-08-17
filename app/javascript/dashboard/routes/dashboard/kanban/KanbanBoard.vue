@@ -20,6 +20,7 @@
 import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import KanbanColumn from './KanbanColumn.vue';
+import { onMounted } from 'vue';
 
 onMounted(() => {
   console.log('[KANBAN] KanbanBoard MOUNTED', { accountId: route.params.accountId });
