@@ -36,8 +36,9 @@ import { reactive, ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import ApiClient from 'dashboard/api/ApiClient';
 import KanbanColumn from './KanbanColumn.vue';
+import axios from 'axios'
 
-// API account-scoped
+
 const conversationsAPI = new ApiClient('conversations', { accountScoped: true });
 
 const route = useRoute();
@@ -91,40 +92,56 @@ onMounted(async () => {
   loading.value = false;
 });
 
-/**
- * Disparado pela coluna quando um item cai nela.
- * { id, toStatus }
- */
+async function persistStatus(id, fromStatus, toStatus) {
+  const isToggle =
+    (fromStatus === 'open' && toStatus === 'resolved') ||
+    (fromStatus === 'resolved' && toStatus === 'open')
+
+  if (isToggle) {
+    return axios.post(`${conversationsAPI.url}/${id}/toggle_status`)
+  }
+
+  return conversationsAPI.update(id, { status: toStatus })
+}
+
+
+
 async function onMoved({ id, toStatus }) {
-  // Otimista: move localmente
+  const original =
+    columns.pending.find(i => i.id === id) ||
+    columns.open.find(i => i.id === id) ||
+    columns.resolved.find(i => i.id === id) ||
+    null;
+
+  const fromStatus = original?.status || 'open';
+  if (fromStatus === toStatus) return
+
+
   const removeFromAll = () => {
-    columns.pending = columns.pending.filter(i => i.id !== id);
-    columns.open = columns.open.filter(i => i.id !== id);
+    columns.pending  = columns.pending.filter(i => i.id !== id);
+    columns.open     = columns.open.filter(i => i.id !== id);
     columns.resolved = columns.resolved.filter(i => i.id !== id);
   };
   const addTo = status => {
-    const obj = { id, status };
-    if (status === 'pending') columns.pending = [obj, ...columns.pending];
-    else if (status === 'resolved') columns.resolved = [obj, ...columns.resolved];
-    else columns.open = [obj, ...columns.open];
+    const obj = original ? { ...original, status } : { id, status };
+    if (status === 'pending')  columns.pending  = [obj, ...columns.pending];
+    if (status === 'open')     columns.open     = [obj, ...columns.open];
+    if (status === 'resolved') columns.resolved = [obj, ...columns.resolved];
   };
 
   removeFromAll();
   addTo(toStatus);
 
   try {
-    const { status: http } = await conversationsAPI.update(id, { status: toStatus });
-    console.log('[KANBAN] update status', { id, toStatus, http });
+    const { status: http } = await persistStatus(id, fromStatus, toStatus);
+    console.log('[KANBAN] update status', { id, fromStatus, toStatus, http });
 
-    // Recarrega só a coluna de destino para alinhar com o servidor
-    if (toStatus === 'pending') columns.pending = await fetchList('pending');
-    if (toStatus === 'open') columns.open = await fetchList('open');
-    if (toStatus === 'resolved') columns.resolved = await fetchList('resolved');
+    await refreshAll();
   } catch (e) {
     const code = e?.response?.status ?? '';
     console.error('[KANBAN] erro ao atualizar status', code, e);
     errorMsg.value = `Erro ao mover cartão: ${code}`;
-    await refreshAll(); // volta ao estado consistente
+    await refreshAll();
   }
 }
 </script>
